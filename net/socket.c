@@ -108,6 +108,11 @@
 #include <net/busy_poll.h>
 #include <linux/errqueue.h>
 
+#ifdef CONFIG_POPCORN
+#include <popcorn/types.h>
+#include <popcorn/syscall_server.h>
+#endif
+
 #ifdef CONFIG_NET_RX_BUSY_POLL
 unsigned int sysctl_net_busy_read __read_mostly;
 unsigned int sysctl_net_busy_poll __read_mostly;
@@ -1309,6 +1314,7 @@ int sock_create_kern(struct net *net, int family, int type, int protocol, struct
 }
 EXPORT_SYMBOL(sock_create_kern);
 
+
 SYSCALL_DEFINE3(socket, int, family, int, type, int, protocol)
 {
 	int retval;
@@ -1321,6 +1327,18 @@ SYSCALL_DEFINE3(socket, int, family, int, type, int, protocol)
 	BUILD_BUG_ON(SOCK_CLOEXEC & SOCK_TYPE_MASK);
 	BUILD_BUG_ON(SOCK_NONBLOCK & SOCK_TYPE_MASK);
 
+#ifdef CONFIG_POPCORN
+	/* We want to create a remote socket on master node */
+	if (distributed_remote_process(current)) {
+		retval = redirect_socket(family, type, protocol);
+		SSPRINTK("remote socket created. ret fd: %d\n", retval);
+		SSPRINTK("pid: %d, nid: %d\n",
+			 current->origin_pid, current->origin_nid);
+		SSPRINTK("is worker: %d, at remote: %d\n", current->is_worker,
+			 current->at_remote);
+		return retval;
+	}
+#endif
 	flags = type & ~SOCK_TYPE_MASK;
 	if (flags & ~(SOCK_CLOEXEC | SOCK_NONBLOCK))
 		return -EINVAL;
@@ -1465,6 +1483,14 @@ SYSCALL_DEFINE3(bind, int, fd, struct sockaddr __user *, umyaddr, int, addrlen)
 	struct sockaddr_storage address;
 	int err, fput_needed;
 
+#ifdef CONFIG_POPCORN
+	/* We want to redirect bind back to origin */
+	if (distributed_remote_process(current)) {
+		err = redirect_bind(fd, umyaddr, addrlen);
+		SSPRINTK("remote bind ret: %d\n", err);
+		return err;
+	}
+#endif
 	sock = sockfd_lookup_light(fd, &err, &fput_needed);
 	if (sock) {
 		err = move_addr_to_kernel(umyaddr, addrlen, &address);
@@ -1494,6 +1520,14 @@ SYSCALL_DEFINE2(listen, int, fd, int, backlog)
 	int err, fput_needed;
 	int somaxconn;
 
+#ifdef CONFIG_POPCORN
+	/* We want to redirect listen() back to origin */
+	if (distributed_remote_process(current)) {
+		err = redirect_listen(fd, backlog);
+		SSPRINTK("remote listen ret: %d\n", err);
+		return err;
+	}
+#endif
 	sock = sockfd_lookup_light(fd, &err, &fput_needed);
 	if (sock) {
 		somaxconn = sock_net(sock->sk)->core.sysctl_somaxconn;
@@ -1529,6 +1563,14 @@ SYSCALL_DEFINE4(accept4, int, fd, struct sockaddr __user *, upeer_sockaddr,
 	int err, len, newfd, fput_needed;
 	struct sockaddr_storage address;
 
+#ifdef CONFIG_POPCORN
+	/* We want to redirect accept4 back to origin */
+	if (distributed_remote_process(current)) {
+		err = redirect_accept4(fd, upeer_sockaddr, upeer_addrlen,
+				       flags);
+		return err;
+	}
+#endif
 	if (flags & ~(SOCK_CLOEXEC | SOCK_NONBLOCK))
 		return -EINVAL;
 
@@ -1782,6 +1824,12 @@ SYSCALL_DEFINE6(recvfrom, int, fd, void __user *, ubuf, size_t, size,
 	int err, err2;
 	int fput_needed;
 
+#ifdef CONFIG_POPCORN
+	if (distributed_remote_process(current)) {
+		err = redirect_recvfrom(fd, ubuf, size, flags, addr, addr_len);
+		return err;
+	}
+#endif
 	err = import_single_range(READ, ubuf, size, &iov, &msg.msg_iter);
 	if (unlikely(err))
 		return err;
@@ -1837,6 +1885,15 @@ SYSCALL_DEFINE5(setsockopt, int, fd, int, level, int, optname,
 	if (optlen < 0)
 		return -EINVAL;
 
+#ifdef CONFIG_POPCORN
+	/* We want to redirect setsockopt back to origin */
+	if (distributed_remote_process(current)) {
+		err = redirect_setsockopt(fd, level, optname, optval,
+					     optlen);
+		SSPRINTK("setsockopt ret: %d\n", err);
+		return err;
+	}
+#endif
 	sock = sockfd_lookup_light(fd, &err, &fput_needed);
 	if (sock != NULL) {
 		err = security_socket_setsockopt(sock, level, optname);
@@ -1897,6 +1954,12 @@ SYSCALL_DEFINE2(shutdown, int, fd, int, how)
 	int err, fput_needed;
 	struct socket *sock;
 
+#ifdef CONFIG_POPCORN
+	if (distributed_remote_process(current)) {
+		err = redirect_shutdown(fd, how);
+		return err;
+	}
+#endif
 	sock = sockfd_lookup_light(fd, &err, &fput_needed);
 	if (sock != NULL) {
 		err = security_socket_shutdown(sock, how);

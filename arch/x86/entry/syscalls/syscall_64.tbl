@@ -339,6 +339,10 @@
 330	common	pkey_alloc		sys_pkey_alloc
 331	common	pkey_free		sys_pkey_free
 332	common	statx			sys_statx
+333 64	popcorn_migrate		sys_popcorn_migrate
+334 64	popcorn_propose_migration	sys_popcorn_propose_migration
+335 64	popcorn_get_thread_status	sys_popcorn_get_thread_status
+336 64	popcorn_get_node_info	sys_popcorn_get_node_info
 
 #
 # x32-specific system call numbers start at 512 to avoid cache impact

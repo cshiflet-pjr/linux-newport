@@ -32,6 +32,11 @@
 #include <asm/mmu_context.h>
 #include <asm/tlbflush.h>
 
+#ifdef CONFIG_POPCORN
+#include <popcorn/types.h>
+#include <popcorn/vma_server.h>
+#endif
+
 #include "internal.h"
 
 static unsigned long change_pte_range(struct vm_area_struct *vma, pmd_t *pmd,
@@ -412,6 +417,13 @@ static int do_mprotect_pkey(unsigned long start, size_t len,
 		return -ENOMEM;
 	if (!arch_validate_prot(prot))
 		return -EINVAL;
+
+#ifdef CONFIG_POPCORN
+	if (distributed_remote_process(current)) {
+		error = vma_server_mprotect_remote(start, len, prot);
+		if (error) return error;
+	}
+#endif
 
 	reqprot = prot;
 

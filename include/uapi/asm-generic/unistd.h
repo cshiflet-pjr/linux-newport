@@ -732,9 +732,17 @@ __SYSCALL(__NR_pkey_alloc,    sys_pkey_alloc)
 __SYSCALL(__NR_pkey_free,     sys_pkey_free)
 #define __NR_statx 291
 __SYSCALL(__NR_statx,     sys_statx)
+#define __NR_popcorn_migrate 292
+__SYSCALL(__NR_popcorn_migrate, sys_popcorn_migrate)
+#define __NR_popcorn_propose_migration 293
+__SYSCALL(__NR_popcorn_propose_migration, sys_popcorn_propose_migration)
+#define __NR_popcorn_get_thread_status 294
+__SYSCALL(__NR_popcorn_get_thread_status, sys_popcorn_get_thread_status)
+#define __NR_popcorn_get_node_info 295
+__SYSCALL(__NR_popcorn_get_node_info, sys_popcorn_get_node_info)
 
 #undef __NR_syscalls
-#define __NR_syscalls 292
+#define __NR_syscalls 296
 
 /*
  * All syscalls below here should go away really,

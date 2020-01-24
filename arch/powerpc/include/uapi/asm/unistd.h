@@ -395,5 +395,9 @@
 #define __NR_pwritev2		381
 #define __NR_kexec_file_load	382
 #define __NR_statx		383
+#define __NR_popcorn_migrate	384
+#define __NR_popcorn_propose_migration	385
+#define __NR_popcorn_get_thread_status	386
+#define __NR_popcorn_get_node_info	387
 
 #endif /* _UAPI_ASM_POWERPC_UNISTD_H_ */

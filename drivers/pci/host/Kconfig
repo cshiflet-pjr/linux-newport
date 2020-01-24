@@ -220,4 +220,18 @@ config VMD
 	  To compile this driver as a module, choose M here: the
 	  module will be called vmd.
 
+config PCI_HOST_THUNDER_PEM
+	bool "Cavium Thunder PCIe controller to off-chip devices"
+	depends on OF && ARM64
+	select PCI_HOST_COMMON
+	help
+	  Say Y here if you want PCIe support for CN88XX Cavium Thunder SoCs.
+
+config PCI_HOST_THUNDER_ECAM
+	bool "Cavium Thunder ECAM controller to on-chip devices on pass-1.x silicon"
+	depends on OF && ARM64
+	select PCI_HOST_COMMON
+	help
+	  Say Y here if you want ECAM support for CN88XX-Pass-1.x Cavium Thunder SoCs.
+
 endmenu

@@ -36,3 +36,10 @@ obj-$(CONFIG_VMD) += vmd.o
 obj-$(CONFIG_ARM64) += pci-thunder-ecam.o
 obj-$(CONFIG_ARM64) += pci-thunder-pem.o
 obj-$(CONFIG_ARM64) += pci-xgene.o
+
+# Popcorn Porting Note
+# 	This is present in kernel v4.4.137 patch.
+#   Appear to be superceded.
+# +obj-$(CONFIG_PCIE_QCOM) += pcie-qcom.o
+# +obj-$(CONFIG_PCI_HOST_THUNDER_ECAM) += pci-thunder-ecam.o
+# +obj-$(CONFIG_PCI_HOST_THUNDER_PEM) += pci-thunder-pem.o

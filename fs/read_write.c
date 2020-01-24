@@ -563,10 +563,24 @@ static inline void file_pos_write(struct file *file, loff_t pos)
 	file->f_pos = pos;
 }
 
+#ifdef CONFIG_POPCORN
+#include <popcorn/types.h>
+#include <popcorn/syscall_server.h>
+#endif
+
 SYSCALL_DEFINE3(read, unsigned int, fd, char __user *, buf, size_t, count)
 {
-	struct fd f = fdget_pos(fd);
-	ssize_t ret = -EBADF;
+	struct fd f;
+	ssize_t ret;
+
+#ifdef CONFIG_POPCORN
+	if (distributed_remote_process(current)) {
+		ret = redirect_read(fd, buf, count);
+		return ret;
+	}
+#endif
+	f = fdget_pos(fd);
+	ret = -EBADF;
 
 	if (f.file) {
 		loff_t pos = file_pos_read(f.file);
@@ -581,8 +595,18 @@ SYSCALL_DEFINE3(read, unsigned int, fd, char __user *, buf, size_t, count)
 SYSCALL_DEFINE3(write, unsigned int, fd, const char __user *, buf,
 		size_t, count)
 {
-	struct fd f = fdget_pos(fd);
-	ssize_t ret = -EBADF;
+	struct fd f;
+	ssize_t ret;
+
+#ifdef CONFIG_POPCORN
+	if (distributed_remote_process(current)) {
+		ret = redirect_write(fd, buf, count);
+		return ret;
+	}
+#endif
+
+	f = fdget_pos(fd);
+	ret = -EBADF;
 
 	if (f.file) {
 		loff_t pos = file_pos_read(f.file);
@@ -1005,8 +1029,18 @@ static ssize_t vfs_writev(struct file *file, const struct iovec __user *vec,
 static ssize_t do_readv(unsigned long fd, const struct iovec __user *vec,
 			unsigned long vlen, rwf_t flags)
 {
-	struct fd f = fdget_pos(fd);
-	ssize_t ret = -EBADF;
+	struct fd f;
+	ssize_t ret;
+
+#ifdef CONFIG_POPCORN
+	if (distributed_remote_process(current)) {
+		ret = redirect_writev(fd, vec, vlen);
+		return ret;
+	}
+#endif
+
+	f = fdget_pos(fd);
+	ret = -EBADF;
 
 	if (f.file) {
 		loff_t pos = file_pos_read(f.file);
@@ -1482,6 +1516,13 @@ SYSCALL_DEFINE4(sendfile64, int, out_fd, int, in_fd, loff_t __user *, offset, si
 {
 	loff_t pos;
 	ssize_t ret;
+
+#ifdef CONFIG_POPCORN
+	if (distributed_remote_process(current)) {
+		ret = redirect_sendfile64(out_fd, in_fd, offset, count);
+		return ret;
+	}
+#endif
 
 	if (offset) {
 		if (unlikely(copy_from_user(&pos, offset, sizeof(loff_t))))
