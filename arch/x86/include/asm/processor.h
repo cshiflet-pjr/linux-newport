@@ -444,7 +444,13 @@ struct thread_struct {
 
 	u32			status;		/* thread synchronous flags */
 
+#ifdef CONFIG_X86_32                                                                   
+    unsigned long       ip;                                                            
+#endif                                                                                 
+    unsigned long       gs;   
+
 #ifdef CONFIG_X86_64
+    unsigned long       fs;  
 	unsigned long		fsbase;
 	unsigned long		gsbase;
 #else

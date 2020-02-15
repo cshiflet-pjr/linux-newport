@@ -18,6 +18,8 @@
 #include <linux/kthread.h>
 #include <linux/slab.h>
 #include <linux/proc_fs.h>
+#include <linux/sched/signal.h> 
+#include <linux/uaccess.h>
 #include <asm/uaccess.h>
 
 #include <popcorn/pcn_kmsg.h>
@@ -141,6 +143,7 @@ DEFINE_PCN_KMSG(remote_ps_response_t, REMOTE_PS_RESPONSE_FIELDS);
 // CPU load per thread
 static void popcorn_ps_load(struct task_struct *t, unsigned int *puload, unsigned int *psload)
 {
+/*  FIX ME
 	unsigned long delta, now;
 	unsigned long utime = cputime_to_jiffies(t->utime);
 	unsigned long stime = cputime_to_jiffies(t->stime);
@@ -166,6 +169,7 @@ static void popcorn_ps_load(struct task_struct *t, unsigned int *puload, unsigne
 
 	*puload = uload;
 	*psload = sload;
+*/
 
 	return;
 }

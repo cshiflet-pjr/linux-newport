@@ -11,6 +11,7 @@
 
 #include <asm/current.h>
 
+#include <linux/completion.h>
 #include <linux/pid.h>
 #include <linux/sem.h>
 #include <linux/shm.h>

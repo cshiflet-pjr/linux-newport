@@ -547,7 +547,8 @@ static pte_t *__get_pte_at_alloc(struct mm_struct *mm, struct vm_area_struct *vm
 	pmd = pmd_alloc(mm, pud, addr);
 	if (!pmd) return NULL;
 
-	pte = pte_alloc_map(mm, vma, pmd, addr);
+	/*FIX ME really just verify me pte = pte_alloc_map(mm, vma, pmd ); */
+	pte = pte_alloc_map(mm, pmd, addr); 
 
 	*ppmd = pmd;
 	*ptlp = pte_lockptr(mm, pmd);
@@ -1639,7 +1640,8 @@ static int __handle_localfault_at_remote(struct mm_struct *mm,
 		page = alloc_page_vma(GFP_HIGHUSER_MOVABLE, vma, addr);
 		BUG_ON(!page);
 
-		if (mem_cgroup_try_charge(page, mm, GFP_KERNEL, &memcg)) {
+	/*	FIX ME really just check me */
+		if (mem_cgroup_try_charge(page, mm, GFP_KERNEL, &memcg, true)) {
 			BUG();
 		}
 		populated = true;
@@ -1683,7 +1685,7 @@ static int __handle_localfault_at_remote(struct mm_struct *mm,
 		spin_lock(ptl);
 		if (populated) {
 			do_set_pte(vma, addr, page, pte, fault_for_write(fault_flags), true);
-			mem_cgroup_commit_charge(page, memcg, false);
+			mem_cgroup_commit_charge(page, memcg, false, false);
 			lru_cache_add_active_or_unevictable(page, vma);
 		} else {
 			__make_pte_valid(mm, vma, addr, fault_flags, pte);

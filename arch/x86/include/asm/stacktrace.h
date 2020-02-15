@@ -45,8 +45,10 @@ static inline bool on_stack(struct stack_info *info, void *addr, size_t len)
 
 #ifdef CONFIG_X86_32
 #define STACKSLOTS_PER_LINE 8
+#define get_bp(bp) asm("movl %%ebp, %0" : "=r" (bp) :) 
 #else
 #define STACKSLOTS_PER_LINE 4
+#define get_bp(bp) asm("movq %%rbp, %0" : "=r" (bp) :) 
 #endif
 
 #ifdef CONFIG_FRAME_POINTER

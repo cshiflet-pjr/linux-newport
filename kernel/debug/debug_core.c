@@ -55,7 +55,6 @@
 #include <linux/mm.h>
 #include <linux/vmacache.h>
 #include <linux/rcupdate.h>
-#include <linux/syscalls.h>
 
 #include <asm/cacheflush.h>
 #include <asm/byteorder.h>

@@ -22,6 +22,7 @@
 #include <linux/syscalls.h>
 
 #include <linux/elf.h>
+#include <linux/sched/mm.h> 
 
 #include <popcorn/types.h>
 #include <popcorn/bundle.h>
@@ -74,7 +75,7 @@ static unsigned long map_difference(struct mm_struct *mm, struct file *file,
 			VSPRINTK("  [%d] map0 %lx -- %lx @ %lx, %lx\n", current->pid,
 					start, end, pgoff, prot);
 			error = do_mmap_pgoff(file, start, end - start,
-					prot, flags, pgoff, &populate);
+					prot, flags, pgoff, &populate, NULL);
 			if (error != start) {
 				ret = VM_FAULT_SIGBUS;
 			}
@@ -101,7 +102,7 @@ static unsigned long map_difference(struct mm_struct *mm, struct file *file,
 			VSPRINTK("  [%d] map1 %lx -- %lx @ %lx\n", current->pid,
 					start, vma->vm_start, pgoff);
 			error = do_mmap_pgoff(file, start, vma->vm_start - start,
-					prot, flags, pgoff, &populate);
+					prot, flags, pgoff, &populate, NULL);
 			if (error != start) {
 				ret = VM_FAULT_SIGBUS;;
 			}
@@ -111,7 +112,7 @@ static unsigned long map_difference(struct mm_struct *mm, struct file *file,
 			VSPRINTK("  [%d] map2 %lx -- %lx @ %lx\n", current->pid,
 					start, vma->vm_start, pgoff);
 			error = do_mmap_pgoff(file, start, vma->vm_start - start,
-					prot, flags, pgoff, &populate);
+					prot, flags, pgoff, &populate, NULL);
 			if (error != start) {
 				ret = VM_FAULT_SIGBUS;
 				break;
@@ -487,7 +488,7 @@ static long __process_vma_op_at_origin(vma_op_request_t *req)
 		}
 		down_write(&mm->mmap_sem);
 		raddr = do_mmap_pgoff(f, req->addr, req->len, req->prot,
-				req->flags, req->pgoff, &populate);
+				req->flags, req->pgoff, &populate, NULL);
 		up_write(&mm->mmap_sem);
 		if (populate) mm_populate(raddr, populate);
 

@@ -12,8 +12,8 @@ enum {
 	FH_ACTION_DELAY = 0x04,   /* Provide a time quantum to guarantee the
 								 execution on the node if ongoing handling
 								 brings a page successfully */
-
-	FAULT_FLAG_REMOTE = 0x100,
+/* possible FIX ME */
+/*	FAULT_FLAG_REMOTE = 0x100, */
 
 	FH_ACTION_MAX_FOLLOWER = 8,
 };

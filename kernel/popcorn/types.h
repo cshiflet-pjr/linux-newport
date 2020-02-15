@@ -11,6 +11,8 @@
 #include <popcorn/pcn_kmsg.h>
 #include <popcorn/regset.h>
 
+#include <linux/sched/task.h> 
+
 #define FAULTS_HASH 31
 
 /**

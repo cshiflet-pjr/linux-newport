@@ -84,7 +84,7 @@ int save_thread_info(struct field_arch *arch)
 	WARN_ON(es);
 	WARN_ON(gs);
 	arch->tls = fs;
-	arch->fpu_active = !!current->thread.fpu.fpstate_active;
+	arch->fpu_active = !!current->thread.fpu.initialized;
 
 	put_cpu();
 
@@ -161,7 +161,7 @@ int restore_thread_info(struct field_arch *arch, bool restore_segments)
 		*/
 
 		if (arch->tls) {
-			do_arch_prctl(current, ARCH_SET_FS, arch->tls);
+			do_arch_prctl_64(current, ARCH_SET_FS, arch->tls);
 		}
 		/*
 		if (arch->thread_gs) {
@@ -169,7 +169,8 @@ int restore_thread_info(struct field_arch *arch, bool restore_segments)
 		}
 		*/
 		if (arch->fpu_active) {
-			fpu__activate_curr(&current->thread.fpu);
+			/*fpu__activate_curr(&current->thread.fpu);*/
+			 fpu__initialize(&current->thread.fpu);
 		}
 	}
 

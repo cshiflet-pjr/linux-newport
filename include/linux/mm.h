@@ -297,6 +297,10 @@ extern pgprot_t protection_map[16];
 #define FAULT_FLAG_REMOTE	0x80	/* faulting for non current tsk/mm */
 #define FAULT_FLAG_INSTRUCTION  0x100	/* The fault was during an instruction fetch */
 
+#ifndef CONFIG_POPCORN
+#define FAULT_FLAG_REMOTE	0x80	/* faulting for non current tsk/mm */
+#endif
+
 #define FAULT_FLAG_TRACE \
 	{ FAULT_FLAG_WRITE,		"WRITE" }, \
 	{ FAULT_FLAG_MKWRITE,		"MKWRITE" }, \
@@ -683,7 +687,14 @@ int alloc_set_pte(struct vm_fault *vmf, struct mem_cgroup *memcg,
 		struct page *page);
 int finish_fault(struct vm_fault *vmf);
 int finish_mkwrite_fault(struct vm_fault *vmf);
+
+void do_set_pte(struct vm_area_struct *vma, unsigned long address,
+        struct page *page, pte_t *pte, bool write, bool anon);
+
 #endif
+
+
+
 
 /*
  * Multiple processes may "see" the same page. E.g. for untouched

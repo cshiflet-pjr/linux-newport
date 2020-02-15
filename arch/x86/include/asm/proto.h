@@ -4,6 +4,8 @@
 
 #include <asm/ldt.h>
 
+/*long do_arch_prctl(struct task_struct *task, int code, unsigned long addr); */
+
 /* misc architecture specific prototypes */
 
 void syscall_init(void);

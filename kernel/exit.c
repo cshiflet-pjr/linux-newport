@@ -495,7 +495,8 @@ assign_new_owner:
  * Turn us into a lazy TLB process if we
  * aren't already..
  */
-static void exit_mm(void)
+/*static void exit_mm(void)*/
+static void exit_mm(struct task_struct *tsk)
 {
 	struct mm_struct *mm = current->mm;
 	struct core_state *core_state;
@@ -858,7 +859,7 @@ void __noreturn do_exit(long code)
 	tsk->exit_code = code;
 	taskstats_exit(tsk, group_dead);
 
-	exit_mm();
+	exit_mm(tsk);
 
 	if (group_dead)
 		acct_process();

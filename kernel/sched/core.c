@@ -4933,6 +4933,8 @@ SYSCALL_DEFINE2(popcorn_migrate, int, nid, void __user *, uregs)
 }
 #pragma GCC reset_options
 #else // CONFIG_POPCORN
+
+#ifdef CONFIG_POPCORN
 SYSCALL_DEFINE2(popcorn_migrate, int, nid, void __user *, uregs)
 {
 	PCNPRINTK_ERR("Kernel is not configured to use popcorn\n");
@@ -4955,6 +4957,7 @@ SYSCALL_DEFINE2(popcorn_get_node_info, int *, _my_nid, struct popcorn_node_info 
 	PCNPRINTK_ERR("Kernel is not configured to use popcorn\n");
 	return -EPERM;
 }
+#endif
 #endif
 
 /**
