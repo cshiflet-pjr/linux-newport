@@ -2876,8 +2876,9 @@ SYSCALL_DEFINE5(remap_file_pages, unsigned long, start, unsigned long, size,
 	}
 
 	file = get_file(vma->vm_file);
+/* FIX ME check NULL*/
 	ret = do_mmap_pgoff(vma->vm_file, start, size,
-			prot, flags, pgoff, &populate, NULL);
+			prot, flags, pgoff, &populate, &vma->anon_vma_chain);
 	fput(file);
 out:
 	up_write(&mm->mmap_sem);

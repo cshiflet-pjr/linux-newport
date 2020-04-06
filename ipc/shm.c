@@ -1399,7 +1399,7 @@ long do_shmat(int shmid, char __user *shmaddr, int shmflg,
 		if (find_vma_intersection(current->mm, addr, addr + size))
 			goto invalid;
 	}
-
+/* FIX ME check NULL*/
 	addr = do_mmap_pgoff(file, addr, size, prot, flags, 0, &populate, NULL);
 	*raddr = addr;
 	err = 0;
