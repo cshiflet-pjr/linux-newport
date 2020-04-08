@@ -3919,6 +3919,8 @@ static int handle_pte_fault(struct vm_fault *vmf)
 {
 	pte_t entry;
 
+entry = *vmf->pte;
+
 	if (unlikely(pmd_none(*vmf->pmd))) {
 		/*
 		 * Leave __pte_alloc() until later: because vm_ops->fault may
@@ -3949,14 +3951,16 @@ static int handle_pte_fault(struct vm_fault *vmf)
 		 * ptl lock held. So here a barrier will do.
 		 */
 		barrier();
+		if (pte_none(vmf->orig_pte)) {
+			pte_unmap(vmf->pte);
+			vmf->pte = NULL;
+		}
+	}
 #ifdef CONFIG_POPCORN
 		if (distributed_process(current)) {
-			//int ret = page_server_handle_pte_fault(
-					//mm, vma, address, pmd, pte, entry, flags);
-
-			//int ret = page_server_handle_pte_fault(
-					//mm, vmf->vma, vmf->address, vmf->pmd, vmf->pte, vmf->orig_pte, vmf->flags);
-/*FIX ME
+			//int ret = page_server_handle_pte_fault( vmf->vma->vm_mm, vmf,  vmf->address);
+			int ret = page_server_handle_pte_fault(vmf);
+/*FIX ME */
 			if (ret == VM_FAULT_RETRY) {
 				int backoff = ++current->backoff_weight;
 				PGPRINTK("  [%d] backoff %d\n", current->pid, backoff);
@@ -3969,14 +3973,8 @@ static int handle_pte_fault(struct vm_fault *vmf)
 				current->backoff_weight /= 2;
 			}
 			if (ret != VM_FAULT_CONTINUE) return ret;
-*/
 		}
 #endif
-		if (pte_none(vmf->orig_pte)) {
-			pte_unmap(vmf->pte);
-			vmf->pte = NULL;
-		}
-	}
 
 	if (!vmf->pte) {
 		if (vma_is_anonymous(vmf->vma))
@@ -3984,14 +3982,41 @@ static int handle_pte_fault(struct vm_fault *vmf)
 		else
 			return do_fault(vmf);
 	}
-/*FIX ME
-*/
+    if (!pte_present(vmf->orig_pte))
+        return do_swap_page(vmf);
+
+    if (pte_protnone(vmf->orig_pte) && vma_is_accessible(vmf->vma))
+        return do_numa_page(vmf);
+
+    vmf->ptl = pte_lockptr(vmf->vma->vm_mm, vmf->pmd);
+    spin_lock(vmf->ptl);
+    entry = vmf->orig_pte;
+    if (unlikely(!pte_same(*vmf->pte, entry)))
+        goto unlock;
+    if (vmf->flags & FAULT_FLAG_WRITE) {
+        if (!pte_write(entry))
+            return do_wp_page(vmf);
+        entry = pte_mkdirty(entry);
+    }
+    entry = pte_mkyoung(entry);
+    if (ptep_set_access_flags(vmf->vma, vmf->address, vmf->pte, entry,
+                vmf->flags & FAULT_FLAG_WRITE)) {
+        update_mmu_cache(vmf->vma, vmf->address, vmf->pte);
+    } else {
+        /*
+         * This is needed only for protection faults but the arch code
+         * is not yet telling us if this is a protection fault or not.
+         * This still avoids useless tlb flushes for .text page faults
+         * with threads.
+         */
+        if (vmf->flags & FAULT_FLAG_WRITE)
+            flush_tlb_fix_spurious_fault(vmf->vma, vmf->address);
+    }
+/*FIX ME */
 #ifdef CONFIG_POPCORN
 	/* May need to be inside next if statement */
 	//page_server_panic(true, mm, address, pte, entry);
 #endif
-/*
-*/
 	if (!pte_present(vmf->orig_pte))
 		return do_swap_page(vmf);
 
@@ -4042,7 +4067,7 @@ struct page *get_normal_page(struct vm_area_struct *vma, unsigned long addr, pte
 	page = alloc_zeroed_user_highpage_movable(vma, addr);
 	if (!page) return NULL;
 
-/* FIX ME */
+
 	if (mem_cgroup_try_charge(page, mm, GFP_KERNEL, &memcg, false)) {
 		page_cache_release(page);
 		return NULL;
@@ -4081,11 +4106,21 @@ int handle_pte_fault_origin(struct mm_struct *mm,
 	pte_t entry = *pte;
 	barrier();
 
-/* FIX ME
+/* FIX ME */
+
+
+
+
+    struct vm_fault *vmf;
+    
+
+    vmf->vma = &vma;
+    //vmf->vmf->flags = flags;
+    vmf->prealloc_pte = &pte;
+    vma->vm_mm = mm;
+
 	if (!vma_is_anonymous(vma))
-		return do_fault(mm, vma, address, pte, pmd, flags, entry);
-static int do_fault(struct vm_fault *vmf)
-*/
+        return do_fault(vmf);
 
 	/**
 	 * Following is for anonymous page. Almost same to do_anonymos_page
@@ -4102,7 +4137,6 @@ static int do_fault(struct vm_fault *vmf)
 	if (!page)
 		return VM_FAULT_OOM;
 
-/* FIX ME  */
 	if (mem_cgroup_try_charge(page, mm, GFP_KERNEL, &memcg, false)) {
 		page_cache_release(page);
 		return VM_FAULT_OOM;
@@ -4185,7 +4219,6 @@ int cow_file_at_origin(struct mm_struct *mm, struct vm_area_struct *vma, unsigne
 
     /* FIX ME */
 	page_remove_rmap(old_page, true);
-	/*page_cache_release(old_page);*/
 	put_page(old_page);
 
 	return 0;

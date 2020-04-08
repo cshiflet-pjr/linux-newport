@@ -63,7 +63,7 @@
 #define MADV_KEEPONFORK 19		/* Undo MADV_WIPEONFORK */
 
 #ifdef CONFIG_POPCORN
-#define MADV_RELEASE 18
+#define MADV_RELEASE 20
 #endif
 
 /* compatibility flags */

@@ -751,11 +751,9 @@ madvise_behavior_valid(int behavior)
 	case MADV_SOFT_OFFLINE:
 	case MADV_HWPOISON:
 #endif
-/* FIX ME
 #ifdef CONFIG_POPCORN
 	case MADV_RELEASE:
 #endif
-*/
 		return true;
 
 	default:
