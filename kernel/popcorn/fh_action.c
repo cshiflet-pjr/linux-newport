@@ -116,7 +116,7 @@ unsigned short get_fh_action(bool at_remote, unsigned long fh_flags, unsigned fa
 	i  = (at_remote << 5);
 	i |= (fh_flags & 0x07) << 2;
 	i |= !!(fault_for_write(fault_flags)) << 1;
-	i |= !!(fault_flags & FAULT_FLAG_REMOTE) << 0;
+	i |= !!(fault_flags & PC_FAULT_FLAG_REMOTE) << 0;
 
 #ifdef CONFIG_POPCORN_STAT
 	__fh_action_stat[i]++;
