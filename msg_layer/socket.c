@@ -211,7 +211,7 @@ static int deq_send(struct sock_handle *sh)
 		}
 		p += sent;
 		remaining -= sent;
-		//printk("Sent %d remaining %d\n", sent, remaining);
+		MSGPRINTK("Sent %d remaining %d\n", sent, remaining);
 	}
 	if (test_bit(SEND_FLAG_POSTED, &flags)) {
 		sock_kmsg_put(msg);
@@ -354,9 +354,9 @@ static struct file_operations peers_ops = {
 static struct proc_dir_entry *proc_entry = NULL;
 static int peers_init(void)
 {
-	proc_entry = proc_create("popcorn_peers",  0444, NULL, &peers_ops);
+        proc_entry = proc_create("popcorn_peers",  0444, NULL, &peers_ops);
         if (proc_entry == NULL) {
-                printk(KERN_ERR"cannot create proc_fs entry for popcorn stats\n");
+                MSGPRINTK("cannot create proc_fs entry for popcorn stats\n");
                 return -ENOMEM;
         }
         return 0;
@@ -370,7 +370,7 @@ static struct task_struct * __init __start_handler(const int nid, const char *ty
 	sprintf(name, "pcn_%s_%d", type, nid);
 	tsk = kthread_run(handler, sock_handles + nid, name);
 	if (IS_ERR(tsk)) {
-		printk(KERN_ERR "Cannot create %s handler, %ld\n", name, PTR_ERR(tsk));
+		MSGPRINTK("Cannot create %s handler, %ld\n", name, PTR_ERR(tsk));
 		return tsk;
 	}
 
@@ -495,7 +495,7 @@ static int __init __listen_to_connection(void)
 
 	ret = sock_create(PF_INET, SOCK_STREAM, IPPROTO_TCP, &sock_listen);
 	if (ret < 0) {
-		printk(KERN_ERR "Failed to create socket, %d", ret);
+		MSGPRINTK("Failed to create socket, %d", ret);
 		return ret;
 	}
 
@@ -505,13 +505,13 @@ static int __init __listen_to_connection(void)
 
 	ret = kernel_bind(sock_listen, (struct sockaddr *)&addr, sizeof(addr));
 	if (ret < 0) {
-		printk(KERN_ERR "Failed to bind socket, %d\n", ret);
+		MSGPRINTK("Failed to bind socket, %d\n", ret);
 		goto out_release;
 	}
 
 	ret = kernel_listen(sock_listen, MAX_NUM_NODES);
 	if (ret < 0) {
-		printk(KERN_ERR "Failed to listen to connections, %d\n", ret);
+		MSGPRINTK("Failed to listen to connections, %d\n", ret);
 		goto out_release;
 	}
 
@@ -609,7 +609,7 @@ static int __init init_kmsg_sock(void)
 	broadcast_my_node_info(i);
 
 	PCNPRINTK("Ready on TCP/IP\n");
-	peers_init();
+    peers_init();
 	return 0;
 
 out_exit:

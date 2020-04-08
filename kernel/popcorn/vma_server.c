@@ -11,7 +11,6 @@
  * @author Marina Sadini, Antonio Barbalace, SSRG Virginia Tech 2014
  * @author Marina Sadini, SSRG Virginia Tech 2013
  */
-
 #include <linux/slab.h>
 #include <linux/mm.h>
 #include <linux/kthread.h>
@@ -74,12 +73,8 @@ static unsigned long map_difference(struct mm_struct *mm, struct file *file,
 			 */
 			VSPRINTK("  [%d] map0 %lx -- %lx @ %lx, %lx\n", current->pid,
 					start, end, pgoff, prot);
-
-/* FIX ME */
-			//error = do_mmap_pgoff(file, start, end - start,
-					//prot, flags, pgoff, &populate, NULL);
 			error = do_mmap_pgoff(file, start, end - start,
-					prot, flags, pgoff, &populate, &vma->anon_vma_chain);
+					      prot, flags, pgoff, &populate, &vma->anon_vma_chain);
 			if (error != start) {
 				ret = VM_FAULT_SIGBUS;
 			}
@@ -105,11 +100,8 @@ static unsigned long map_difference(struct mm_struct *mm, struct file *file,
 			 */
 			VSPRINTK("  [%d] map1 %lx -- %lx @ %lx\n", current->pid,
 					start, vma->vm_start, pgoff);
-/* FIX ME */
-			//error = do_mmap_pgoff(file, start, vma->vm_start - start,
-					//prot, flags, pgoff, &populate, NULL);
 			error = do_mmap_pgoff(file, start, vma->vm_start - start,
-					prot, flags, pgoff, &populate, &vma->anon_vma_chain);
+					      prot, flags, pgoff, &populate, &vma->anon_vma_chain);
 			if (error != start) {
 				ret = VM_FAULT_SIGBUS;;
 			}
@@ -118,11 +110,8 @@ static unsigned long map_difference(struct mm_struct *mm, struct file *file,
 			/* VMA is fully within the region of interest */
 			VSPRINTK("  [%d] map2 %lx -- %lx @ %lx\n", current->pid,
 					start, vma->vm_start, pgoff);
-/* FIX ME */
-			//error = do_mmap_pgoff(file, start, vma->vm_start - start,
-					//prot, flags, pgoff, &populate, NULL);
 			error = do_mmap_pgoff(file, start, vma->vm_start - start,
-					prot, flags, pgoff, &populate, &vma->anon_vma_chain);
+					      prot, flags, pgoff, &populate, &vma->anon_vma_chain);
 			if (error != start) {
 				ret = VM_FAULT_SIGBUS;
 				break;
@@ -157,7 +146,7 @@ static unsigned long __get_file_offset(struct file *file, unsigned long vm_start
 
 	retval = kernel_read(file, 0, (char *)&elf_ex, sizeof(elf_ex));
 	if (retval != sizeof(elf_ex)) {
-		printk("%s: ERROR in Kernel read of ELF file\n", __func__);
+		VSPRINTK("%s: ERROR in Kernel read of ELF file\n", __func__);
 		retval = -1;
 		goto out;
 	}
@@ -166,7 +155,7 @@ static unsigned long __get_file_offset(struct file *file, unsigned long vm_start
 
 	elf_eppnt = kmalloc(size, GFP_KERNEL);
 	if (elf_eppnt == NULL) {
-		printk("%s: ERROR: kmalloc failed in\n", __func__);
+		VSPRINTK("%s: ERROR: kmalloc failed in\n", __func__);
 		retval = -1;
 		goto out;
 	}
@@ -174,7 +163,7 @@ static unsigned long __get_file_offset(struct file *file, unsigned long vm_start
 	elf_eppnt_start = elf_eppnt;
 	retval = kernel_read(file, elf_ex.e_phoff, (char *)elf_eppnt, size);
 	if (retval != size) {
-		printk("%s: ERROR: during kernel read of ELF file\n", __func__);
+		VSPRINTK("%s: ERROR: during kernel read of ELF file\n", __func__);
 		retval = -1;
 		goto out;
 	}
@@ -492,15 +481,13 @@ static long __process_vma_op_at_origin(vma_op_request_t *req)
 
 		if (IS_ERR(f)) {
 			ret = PTR_ERR(f);
-			printk("  [%d] Cannot open %s %ld\n", current->pid, req->path, ret);
+			VSPRINTK("  [%d] Cannot open %s %ld\n", current->pid, req->path, ret);
 			mmput(mm);
 			break;
 		}
 		down_write(&mm->mmap_sem);
 		raddr = do_mmap_pgoff(f, req->addr, req->len, req->prot,
-				req->flags, req->pgoff, &populate, NULL);
-		//raddr = do_mmap_pgoff(f, req->addr, req->len, req->prot,
-				//req->flags, req->pgoff, &populate, &vma_info->list);
+				      req->flags, req->pgoff, &populate, NULL);
 		up_write(&mm->mmap_sem);
 		if (populate) mm_populate(raddr, populate);
 
@@ -527,7 +514,7 @@ static long __process_vma_op_at_origin(vma_op_request_t *req)
 		break;
 	case VMA_OP_MREMAP:
 		ret = sys_mremap(req->addr, req->old_len, req->new_len,
-			req->flags, req->new_addr);
+				  req->flags, req->new_addr);
 		break;
 	case VMA_OP_MADVISE:
 		if (req->behavior == MADV_RELEASE) {
@@ -645,7 +632,7 @@ void process_vma_info_request(vma_info_request_t *req)
 
 	vma = find_vma(mm, addr);
 	if (unlikely(!vma)) {
-		printk("vma_info: vma does not exist at %lx\n", addr);
+		VSPRINTK("vma_info: vma does not exist at %lx\n", addr);
 		res->result = -ENOENT;
 		goto out_up;
 	}
@@ -653,7 +640,7 @@ void process_vma_info_request(vma_info_request_t *req)
 		goto good;
 	}
 	if (unlikely(!(vma->vm_flags & VM_GROWSDOWN))) {
-		printk("vma_info: vma does not really exist at %lx\n", addr);
+		VSPRINTK("vma_info: vma does not really exist at %lx\n", addr);
 		res->result = -ENOENT;
 		goto out_up;
 	}
@@ -751,7 +738,7 @@ static int __update_vma(struct task_struct *tsk, vma_info_response_t *res)
 	} else {
 		f = filp_open(res->vm_file_path, O_RDONLY | O_LARGEFILE, 0);
 		if (IS_ERR(f)) {
-			printk(KERN_ERR"%s: cannot find backing file %s\n",__func__,
+			VSPRINTK(KERN_ERR"%s: cannot find backing file %s\n",__func__,
 				res->vm_file_path);
 			ret = -EIO;
 			goto out;

@@ -172,6 +172,7 @@ static void __build_task_comm(char *buffer, char *path)
 ///////////////////////////////////////////////////////////////////////////////
 long process_server_do_futex_at_remote(u32 __user *uaddr, int op, u32 val,
 		bool valid_ts, struct timespec *ts,
+		//bool valid_ts, struct timespec64 *ts,
 		u32 __user *uaddr2,u32 val2, u32 val3)
 {
 	struct wait_station *ws = get_wait_station(current);
@@ -196,7 +197,7 @@ long process_server_do_futex_at_remote(u32 __user *uaddr, int op, u32 val,
 	}
 
 	/*
-	printk(" f[%d] ->[%d/%d] 0x%x %p 0x%x\n", current->pid,
+	PSPRINTK(" f[%d] ->[%d/%d] 0x%x %p 0x%x\n", current->pid,
 			current->origin_pid, current->origin_nid,
 			op, uaddr, val);
 	*/
@@ -205,7 +206,7 @@ long process_server_do_futex_at_remote(u32 __user *uaddr, int op, u32 val,
 	res = wait_at_station(ws);
 	ret = res->ret;
 	/*
-	printk(" f[%d] <-[%d/%d] 0x%x %p %ld\n", current->pid,
+	PSPRINTK(" f[%d] <-[%d/%d] 0x%x %p %ld\n", current->pid,
 			current->origin_pid, current->origin_nid,
 			op, uaddr, ret);
 	*/
@@ -230,21 +231,23 @@ static void process_remote_futex_request(remote_futex_request *req)
 	remote_futex_response *res;
 	ktime_t t, *tp = NULL;
 
-	if (timespec_valid(&req->ts)) {
-		t = timespec_to_ktime(req->ts);
+	//if (timespec_valid(&req->ts)) {
+		//t = timespec_to_ktime(req->ts);
+	if (timespec64_valid(&req->ts)) {
+		t = timespec64_to_ktime(req->ts);
 		t = ktime_add_safe(ktime_get(), t);
 		tp = &t;
 	}
 
 	/*
-	printk(" f[%d] <-[%d/%d] 0x%x %p 0x%x\n", current->pid,
+	PSPRINTK(" f[%d] <-[%d/%d] 0x%x %p 0x%x\n", current->pid,
 			current->remote_pid, current->remote_nid,
 			req->op, req->uaddr, req->val);
 	*/
 	ret = do_futex(req->uaddr, req->op, req->val,
 			tp, req->uaddr2, req->val2, req->val3);
 	/*
-	printk(" f[%d] ->[%d/%d] 0x%x %p %ld\n", current->pid,
+	PSPRINTK(" f[%d] ->[%d/%d] 0x%x %p %ld\n", current->pid,
 			current->remote_pid, current->remote_nid,
 			req->op, req->uaddr, res.ret);
 	*/
@@ -272,7 +275,7 @@ static void __terminate_remotes(struct remote_context *rc)
 	/* Take down peer vma workers */
 	for (nid = 0; nid < MAX_POPCORN_NODES; nid++) {
 		if (nid == my_nid || rc->remote_tgids[nid] == 0) continue;
-		PSPRINTK("TERMINATE [%d/%d] with 0x%d\n",
+		PSPRINTK(" TERMINATE [%d/%d] with 0x%d\n",
 				rc->remote_tgids[nid], nid, req.exit_code);
 
 		req.remote_pid = rc->remote_tgids[nid];
@@ -332,7 +335,7 @@ int process_server_task_exit(struct task_struct *tsk)
 
 	if (!distributed_process(tsk)) return -ESRCH;
 
-	PSPRINTK("EXITED [%d] %s%s / 0x%x\n", tsk->pid,
+	PSPRINTK(" EXITED [%d] %s%s / 0x%x\n", tsk->pid,
 			tsk->at_remote ? "remote" : "local",
 			tsk->is_worker ? " worker": "",
 			tsk->exit_code);
@@ -358,13 +361,13 @@ static void process_remote_task_exit(remote_task_exit_t *req)
 	int exit_code = req->exit_code;
 
 	if (tsk->remote_pid != req->remote_pid) {
-		printk(KERN_INFO"%s: pid mismatch %d != %d\n", __func__,
+		PSPRINTK(KERN_INFO " %s: pid mismatch %d != %d\n", __func__,
 				tsk->remote_pid, req->remote_pid);
 		pcn_kmsg_done(req);
 		return;
 	}
 
-	PSPRINTK("%s [%d] 0x%x\n", __func__, tsk->pid, req->exit_code);
+	PSPRINTK(" %s [%d] 0x%x\n", __func__, tsk->pid, req->exit_code);
 
 	tsk->remote = NULL;
 	tsk->remote_nid = -1;
@@ -384,7 +387,7 @@ static void process_origin_task_exit(struct remote_context *rc, origin_task_exit
 {
 	BUG_ON(!current->is_worker);
 
-	PSPRINTK("\nTERMINATE [%d] with 0x%x\n", current->pid, req->exit_code);
+	PSPRINTK("\n TERMINATE [%d] with 0x%x\n", current->pid, req->exit_code);
 	current->exit_code = req->exit_code;
 	rc->stop_remote_worker = true;
 
@@ -398,12 +401,12 @@ static void process_origin_task_exit(struct remote_context *rc, origin_task_exit
 static void process_back_migration(back_migration_request_t *req)
 {
 	if (current->remote_pid != req->remote_pid) {
-		printk(KERN_INFO"%s: pid mismatch during back migration (%d != %d)\n",
+		PSPRINTK(KERN_INFO " %s: pid mismatch during back migration (%d != %d)\n",
 				__func__, current->remote_pid, req->remote_pid);
 		goto out_free;
 	}
 
-	PSPRINTK("### BACKMIG [%d] from [%d/%d]\n",
+	PSPRINTK(" ### BACKMIG [%d] from [%d/%d]\n",
 			current->pid, req->remote_pid, req->remote_nid);
 
 	/* Welcome home */
@@ -522,7 +525,7 @@ static int remote_thread_main(void *_args)
 	clone_request_t *req = params->req;
 
 #ifdef CONFIG_POPCORN_DEBUG_VERBOSE
-	PSPRINTK("%s [%d] started for [%d/%d]\n", __func__,
+	PSPRINTK(" %s [%d] started for [%d/%d]\n", __func__,
 			current->pid, req->origin_pid, PCN_KMSG_FROM_NID(req));
 #endif
 
@@ -550,7 +553,7 @@ static int remote_thread_main(void *_args)
 
 	__pair_remote_task();
 
-	PSPRINTK("\n####### MIGRATED - [%d/%d] from [%d/%d]\n",
+	PSPRINTK("\n ####### MIGRATED - [%d/%d] from [%d/%d]\n",
 			current->pid, my_nid, current->origin_pid, current->origin_nid);
 
 	kfree(params);
@@ -665,7 +668,7 @@ static void __run_remote_worker(struct remote_context *rc)
 			process_origin_task_exit(rc, (origin_task_exit_t *)msg);
 			break;
 		default:
-			printk("Unknown remote work type %d\n", msg->header.type);
+			PSPRINTK(" Unknown remote work type %d\n", msg->header.type);
 			break;
 		}
 
@@ -809,7 +812,7 @@ int request_remote_work(pid_t pid, struct pcn_kmsg_message *req)
 	struct task_struct *tsk = __get_task_struct(pid);
 	int ret = -ESRCH;
 	if (!tsk) {
-		printk(KERN_INFO"%s: invalid origin task %d for remote work %d\n",
+		PSPRINTK(KERN_INFO " %s: invalid origin task %d for remote work %d\n",
 				__func__, pid, req->header.type);
 		goto out_err;
 	}
@@ -888,7 +891,7 @@ static void __process_remote_works(void)
 			break;
 		default:
 			if (WARN_ON("Received unsupported remote work")) {
-				printk("  type: %d\n", req->header.type);
+				PSPRINTK("   type: %d\n", req->header.type);
 			}
 		}
 	}
@@ -914,7 +917,7 @@ static int __request_clone_remote(int dst_nid, struct task_struct *tsk, void __u
 
 	/* struct mm_struct */
 	if (get_file_path(mm->exe_file, req->exe_path, sizeof(req->exe_path))) {
-		printk("%s: cannot get path to exe binary\n", __func__);
+		PSPRINTK(" %s: cannot get path to exe binary\n", __func__);
 		ret = -ESRCH;
 		pcn_kmsg_put(req);
 		goto out;

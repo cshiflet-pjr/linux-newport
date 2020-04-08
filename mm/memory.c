@@ -927,6 +927,8 @@ struct page *vm_normal_page_pmd(struct vm_area_struct *vma, unsigned long addr,
 		}
 	}
 
+	if (pmd_devmap(pmd))
+		return NULL;
 	if (is_zero_pfn(pfn))
 		return NULL;
 	if (unlikely(pfn > highest_memmap_pfn))
@@ -1309,7 +1311,6 @@ again:
 		pte_t ptent = *pte;
 		if (pte_none(ptent))
 			continue;
-
 #ifdef CONFIG_POPCORN
 		page_server_zap_pte(vma, addr, pte, &ptent);
 #endif
@@ -3976,12 +3977,13 @@ entry = *vmf->pte;
 		}
 #endif
 
-	if (!vmf->pte) {
-		if (vma_is_anonymous(vmf->vma))
-			return do_anonymous_page(vmf);
-		else
-			return do_fault(vmf);
-	}
+    if (!vmf->pte) {
+        if (vma_is_anonymous(vmf->vma))
+            return do_anonymous_page(vmf);
+        else
+            return do_fault(vmf);
+    }
+
     if (!pte_present(vmf->orig_pte))
         return do_swap_page(vmf);
 

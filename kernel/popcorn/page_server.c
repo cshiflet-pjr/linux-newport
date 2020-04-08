@@ -557,7 +557,7 @@ static pte_t *__get_pte_at_alloc(struct mm_struct *mm, struct vm_area_struct *vm
 	if (!pmd) return NULL;
 
 	/*FIX ME really just verify me pte = pte_alloc_map(mm, vma, pmd ); */
-	pte = pte_alloc_map(mm, pmd, addr); 
+	pte = pte_alloc_map(mm, pmd, addr);
 
 	*ppmd = pmd;
 	*ptlp = pte_lockptr(mm, pmd);
