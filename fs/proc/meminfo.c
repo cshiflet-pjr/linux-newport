@@ -73,6 +73,18 @@ static int meminfo_proc_show(struct seq_file *m, void *v)
 
 	available = si_mem_available();
 
+
+#ifdef CONFIG_HIGHMEM
+	show_val_kb(m, "HighTotal:      ", i.totalhigh);
+	show_val_kb(m, "HighFree:       ", i.freehigh);
+	show_val_kb(m, "LowTotal:       ", i.totalram - i.totalhigh);
+	show_val_kb(m, "LowFree:        ", i.freeram - i.freehigh);
+#endif
+
+#ifndef CONFIG_MMU
+	show_val_kb(m, "MmapCopy:       ",
+		    (unsigned long)atomic_long_read(&mmap_pages_allocated));
+#endif
 #ifndef CONFIG_POPCORN_REMOTE_INFO
 	show_val_kb(m, "MemTotal:       ", i.totalram);
 	show_val_kb(m, "MemFree:        ", i.freeram);
@@ -90,18 +102,6 @@ static int meminfo_proc_show(struct seq_file *m, void *v)
 	show_val_kb(m, "Inactive(file): ", pages[LRU_INACTIVE_FILE]);
 	show_val_kb(m, "Unevictable:    ", pages[LRU_UNEVICTABLE]);
 	show_val_kb(m, "Mlocked:        ", global_zone_page_state(NR_MLOCK));
-
-#ifdef CONFIG_HIGHMEM
-	show_val_kb(m, "HighTotal:      ", i.totalhigh);
-	show_val_kb(m, "HighFree:       ", i.freehigh);
-	show_val_kb(m, "LowTotal:       ", i.totalram - i.totalhigh);
-	show_val_kb(m, "LowFree:        ", i.freeram - i.freehigh);
-#endif
-
-#ifndef CONFIG_MMU
-	show_val_kb(m, "MmapCopy:       ",
-		    (unsigned long)atomic_long_read(&mmap_pages_allocated));
-#endif
 
 	show_val_kb(m, "SwapTotal:      ", i.totalswap);
 	show_val_kb(m, "SwapFree:       ", i.freeswap);
